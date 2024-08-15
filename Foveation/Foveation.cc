@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-
+#include <stdlib.h>
 #include "window_manager.h"
 #include "shader.h"
 #include "model.h"
