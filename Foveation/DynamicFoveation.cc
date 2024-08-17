@@ -8,6 +8,20 @@
 #include "buffers.h"
 #include "framebuffers.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
+struct mouse : public MouseListener
+{
+    /* data */
+    float x;
+    float y;
+    void process_mouse(float new_x, float new_y)
+    {
+        x = new_x;
+        y = 800 - new_y;
+    }
+};
+
 int main()
 {
     WindowManager wm;
@@ -17,9 +31,11 @@ int main()
     InputManager im;
     Camera cam;
     im.add_keyboard_listener(cam);
-    im.add_mouse_listener(cam);
+    // im.add_mouse_listener(cam);
     // im.add_scroll_listener(cam);
     wm.set_input_manager(im);
+    mouse mousePosition;
+    im.add_mouse_listener(mousePosition);
 
     Shader shader("./shaders/model.vs", "./shaders/model.fs");
     Shader fbShader("./shaders/framebuffer.vs", "./shaders/framebuffer.fs");
@@ -76,6 +92,8 @@ int main()
     FrameBuffer fovea(100, 100, true);
 
     FrameBuffer *fbo = &fbo1;
+    float fov = 5.9f;
+    wm.bindDefaultFrameBuffer();
     while (wm.isWindowActive())
     {
         if (glfwGetKey(wm.window, GLFW_KEY_1) == GLFW_PRESS)
@@ -86,11 +104,15 @@ int main()
             fbo = &fbo3;
         if (glfwGetKey(wm.window, GLFW_KEY_4) == GLFW_PRESS)
             fbo = &fbo4;
+        if (glfwGetKey(wm.window, GLFW_KEY_UP) == GLFW_PRESS)
+            fov += 0.05f;
+        if (glfwGetKey(wm.window, GLFW_KEY_DOWN) == GLFW_PRESS)
+            fov -= 0.05f;
+
         // if (glfwGetKey(wm.window, GLFW_KEY_5) == GLFW_PRESS)
         //     fbo = &fovea;
         fbo->bind();
         glEnable(GL_DEPTH_TEST);
-        // glViewport(0, 0, 800, 800);
 
         glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -100,7 +122,6 @@ int main()
         // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         shader.use();
-        // shader.setMat4("projection", glm::perspective(glm::radians(5.625f), (float)800 / (float)800, 0.1f, 100.0f));
         shader.setMat4("projection", cam.getProjectionMatrix());
         shader.setMat4("view", cam.getViewMatrix());
         shader.setMat4("model", glm::mat4(1.0f));
@@ -121,8 +142,14 @@ int main()
         fovea.bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shader.use();
-        shader.setMat4("projection", glm::perspective(glm::radians(5.9f), (float)800 / (float)800, 0.1f, 100.0f));
-        shader.setMat4("view", cam.getViewMatrix());
+        glm::vec3 end = glm::unProject(glm::vec3(mousePosition.x, mousePosition.y, 0.f), cam.getViewMatrix(), cam.getProjectionMatrix(), glm::vec4(0, 0, 800, 800));
+        glm::vec3 forward = end - cam.position;
+        glm::vec2 foveaoffset((mousePosition.x - 400.0f) / 400.0f, (mousePosition.y - 400.f) / 400.f);
+        forward = glm::normalize(forward);
+
+        shader.setMat4("projection", glm::perspective(glm::radians(fov), (float)800 / (float)800, 0.1f, 100.0f));
+        std::cout << fov << std::endl;
+        shader.setMat4("view", glm::lookAt(cam.position, cam.position + forward, cam.up));
         shader.setMat4("model", glm::mat4(1.0f));
 
         plane_model = glm::translate(glm::mat4(1.f), glm::vec3(0.f, -1.0f, 0.f));
@@ -137,7 +164,6 @@ int main()
         sphere_model = glm::translate(glm::mat4(1.f), glm::vec3(.5, 0.f, -20.f));
         shader.setMat4("model", sphere_model);
         sphere.draw(shader);
-        // fbo.unbind();
         wm.bindDefaultFrameBuffer();
         glDisable(GL_DEPTH_TEST);
         glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
@@ -146,9 +172,12 @@ int main()
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         fbShader.use();
+        fbShader.setVec2("offset", 0.f, 0.f);
         quadVAO.bind();
         glBindTexture(GL_TEXTURE_2D, fbo->getTextureBuffer());
         glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        fbShader.setVec2("offset", foveaoffset);
         foveaVAO.bind();
         glBindTexture(GL_TEXTURE_2D, fovea.getTextureBuffer());
         glDrawArrays(GL_TRIANGLES, 0, 6);
