@@ -40,9 +40,9 @@ int main()
     Shader shader("./shaders/model.vs", "./shaders/model.fs");
     Shader fbShader("./shaders/framebuffer.vs", "./shaders/framebuffer.fs");
 
-    Model sphere("/home/kaymk11/Code/OpenGL-Practice/resources/models/sphere.obj");
-    Model cube("/home/kaymk11/Code/OpenGL-Practice/resources/models/cube.obj");
-    Model plane("/home/kaymk11/Code/OpenGL-Practice/resources/models/plane.obj");
+    Model sphere("/home/kaymk11/Code/Projects/Foveation/resources/models/sphere.obj");
+    Model cube("/home/kaymk11/Code/Projects/Foveation/resources/models/containerbox.obj");
+    Model plane("/home/kaymk11/Code/Projects/Foveation/resources/models/grassyGround2.obj");
 
     float quadVertices[] = {// vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
                             // positions   // texCoords
